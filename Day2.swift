@@ -18,6 +18,7 @@ struct Report {
     }
     
     var isSafeWithDampener: Bool {
+        isSafe ||
         (0..<levels.count)
             .map { removingLevel(at: $0) }
             .map(\.isSafe)
