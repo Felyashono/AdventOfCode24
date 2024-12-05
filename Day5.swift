@@ -1,3 +1,5 @@
+import Foundation
+
 func mayPrecede(_ a: Int, _ b: Int) -> Bool {
     return !rules[b, default: []].contains(a)
 }
