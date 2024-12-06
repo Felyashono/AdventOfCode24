@@ -81,7 +81,7 @@ func checkForLoop(_ obstacles: [Coordinates]) -> Bool {
     return false
 }
 
-let lines = String("6.txt", sample: true)
+let lines = String("6.txt", sample: false)
     .components(separatedBy: .newlines)
 let gridSize = lines.count
 let mapWithCoordinates = lines
@@ -123,7 +123,17 @@ let allNewObstacles = visitedTiles
         newObstacles.append(coordinates)
         return newObstacles
     }
-let loopsCount = allNewObstacles
-    .map { return checkForLoop($0) }
-    .count(where: { $0 })
+
+let loopsCount = await withTaskGroup(of: Bool.self) { taskGroup in
+    for newObstacles in allNewObstacles {
+        taskGroup.addTask { checkForLoop(newObstacles) }
+    }
+    
+    var returnValue = [Bool]()
+    for await result in taskGroup {
+        returnValue.append(result)
+    }
+    return returnValue
+}.count { $0 }
+
 print(loopsCount)
