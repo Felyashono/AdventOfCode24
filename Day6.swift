@@ -1,6 +1,6 @@
 import Foundation
 
-struct Coordinates: Equatable, CustomStringConvertible, Hashable {
+struct Coordinates: Equatable, Hashable {
     let row: Int
     let column: Int
     
@@ -18,10 +18,6 @@ struct Coordinates: Equatable, CustomStringConvertible, Hashable {
         self.row = triple.row
         self.column = triple.column
     }
-    
-    var description: String {
-        "(\(row), \(column))"
-    }
 }
 
 enum Direction {
@@ -31,9 +27,11 @@ enum Direction {
 struct PatrolGuard {
     var position: Coordinates
     var heading: Direction = .north
-
-    init(_ position: Coordinates) {
+    let obstacles: [Coordinates]
+    
+    init(_ position: Coordinates, _ obstacles: [Coordinates]) {
         self.position = position
+        self.obstacles = obstacles
     }
     
     func nextTile() -> Coordinates {
@@ -67,8 +65,24 @@ func mapTile(_ triple: (row: Int, column: Int, character: Character), equals cha
     return triple.character == character
 }
 
-let input = String("6.txt", sample: true)
-let lines = input.components(separatedBy: .newlines)
+func checkForLoop(_ obstacles: [Coordinates]) -> Bool {
+    var patrolGuard = PatrolGuard(guardCoordinates, obstacles)
+    var visitedTiles: [Coordinates : Set<Direction>] = [:]
+    while patrolGuard.position.isOnMap {
+        if visitedTiles[patrolGuard.position, default: []].contains(patrolGuard.heading) {
+            return true
+        }
+        visitedTiles[patrolGuard.position, default: []].insert(patrolGuard.heading)
+        while patrolGuard.isBlocked() {
+            patrolGuard.turnRight()
+        }
+        patrolGuard.moveForward()
+    }
+    return false
+}
+
+let lines = String("6.txt", sample: true)
+    .components(separatedBy: .newlines)
 let gridSize = lines.count
 let mapWithCoordinates = lines
     .enumerated()
@@ -86,16 +100,30 @@ let guardCoordinates = mapWithCoordinates
     .filter { mapTile($0, equals: "^") }
     .map(Coordinates.init)
     .first!
-var patrolGuard = PatrolGuard(guardCoordinates)
 
 // Part 1
 
-var visitedTiles: Set<Coordinates> = [patrolGuard.position]
+var patrolGuard = PatrolGuard(guardCoordinates, obstacles)
+var visitedTiles: [Coordinates : Set<Direction>] = [:]
 while patrolGuard.position.isOnMap {
+    visitedTiles[patrolGuard.position, default: []].insert(patrolGuard.heading)
     while patrolGuard.isBlocked() {
         patrolGuard.turnRight()
     }
     patrolGuard.moveForward()
-    visitedTiles.insert(patrolGuard.position)
 }
-print(visitedTiles.count - 1)
+print(visitedTiles.count)
+
+// Part 2
+
+let allNewObstacles = visitedTiles
+    .keys
+    .map { coordinates in
+        var newObstacles = obstacles
+        newObstacles.append(coordinates)
+        return newObstacles
+    }
+let loopsCount = allNewObstacles
+    .map { return checkForLoop($0) }
+    .count(where: { $0 })
+print(loopsCount)
